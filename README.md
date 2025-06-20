@@ -52,11 +52,6 @@ Lora-Demo/
    pip install -r requirements.txt
    ```
 
-3. **Set up Weights & Biases** (Optional):
-   ```bash
-   echo "WANDB_API_KEY=your_api_key_here" > .env
-   ```
-
 ### Option 2: Docker (Recommended)
 
 1. **Build and Run with Docker Compose**:
