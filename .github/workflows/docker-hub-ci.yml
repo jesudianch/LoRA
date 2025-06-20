@@ -119,3 +119,12 @@ jobs:
         echo "❌ CI/CD Pipeline failed!"
         echo "Build status: ${{ needs.build-and-push.result }}"
         echo "Security scan status: ${{ needs.security-scan.result }}" 
+
+    - name: Slack Notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo, message, author, job, ref
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  
