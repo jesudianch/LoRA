@@ -296,7 +296,7 @@ Training data should be in JSON format with `input` and `output` fields:
 ### Weights & Biases Dashboard
 
 When `use_wandb=True`, training metrics are automatically logged to:
-- **Project**: https://wandb.ai/jchallapalli7-scotiabank/huggingface
+- **Project**:
 - **Real-time Metrics**: Loss, learning rate, training progress
 - **Model Artifacts**: Checkpoints and final model
 - **System Metrics**: GPU/CPU usage, memory consumption
