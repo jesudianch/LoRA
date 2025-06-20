@@ -121,8 +121,8 @@ jobs:
         echo "Security scan status: ${{ needs.security-scan.result }}" 
 
     - name: Slack Notification
-        if: always()
-        uses: 8398a7/action-slack@v3
+      if: always()
+      uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
           fields: repo, message, author, job, ref
