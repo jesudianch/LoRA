@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  lora-demo:
+    build: .
+    container_name: lora-demo
+    volumes:
+      # Mount output directory to persist results
+      - ./output:/app/output
+      # Mount data directory for custom datasets
+      - ./data:/app/data
+      # Mount wandb directory for experiment tracking
+      - ./wandb:/app/wandb
+    environment:
+      - PYTHONPATH=/app
+      - TOKENIZERS_PARALLELISM=false
+      # Load WANDB_API_KEY from .env file
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    ports:
+      - "8000:8000"
+    # Override command if you want to run something different
+    # command: ["python", "scripts/train.py"]
+    
+  # Inference service for testing the trained model
+  inference:
+    build: .
+    container_name: lora-demo-inference
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - TOKENIZERS_PARALLELISM=false
+    stdin_open: true
+    tty: true
+    command: ["python", "scripts/inference.py"]
+    
+  # Quick test service
+  test-model:
+    build: .
+    container_name: lora-demo-test
+    volumes:
+      - ./output:/app/output
+    environment:
+      - PYTHONPATH=/app
+      - TOKENIZERS_PARALLELISM=false
+    command: ["python", "scripts/test_model.py"]
+    
+  # Optional: Add a Jupyter notebook service for development
+  jupyter:
+    build: .
+    container_name: lora-demo-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+      - ./wandb:/app/wandb
+    environment:
+      - PYTHONPATH=/app
+      - TOKENIZERS_PARALLELISM=false
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    command: ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
+
