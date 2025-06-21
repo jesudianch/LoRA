@@ -12,7 +12,7 @@ class LoRAConfig:
     lora_r: int = 8  # Rank of the LoRA decomposition
     lora_alpha: int = 16  # Scaling factor for LoRA updates
     lora_dropout: float = 0.1  # Dropout rate for LoRA layers
-    lora_target_modules: list = None  # List of target modules to apply LoRA (e.g., specific layers)
+    lora_target_modules: Optional[List[str]] = field(default_factory=lambda: ["q_proj", "v_proj"])  # Default target modules
 
     # Training parameters
     num_epochs: int = 1  # Reduced for testing
@@ -31,4 +31,4 @@ class LoRAConfig:
     fp16: bool = False  # Use fp16 precision if supported
 
     # Weights & Biases configuration
-    use_wandb: bool = True  # Set to True to enable wandb logging
+    use_wandb: bool = False  # Set to False by default for CI/CD

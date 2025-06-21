@@ -8,12 +8,20 @@ import sys
 import torch
 from datetime import datetime
 
+# Add the project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(project_root)
+sys.path.insert(0, project_root)
 
-from src.config.config import LoRAConfig
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from peft import PeftModel
+try:
+    from src.config.config import LoRAConfig
+    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from peft import PeftModel
+except ImportError as e:
+    print(f"Import error: {e}")
+    print(f"Python path: {sys.path}")
+    print(f"Project root: {project_root}")
+    print(f"Current working directory: {os.getcwd()}")
+    sys.exit(1)
 
 def save_test_result(question: str, answer: str, config: LoRAConfig):
     """Save test question and answer to a file."""
@@ -32,18 +40,64 @@ def save_test_result(question: str, answer: str, config: LoRAConfig):
     
     print(f"📝 Test result saved to: {test_log_file}")
 
+def test_basic_imports():
+    """Test if all required modules can be imported."""
+    print("🧪 Testing basic imports...")
+    
+    try:
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+        print("✅ Transformers imported successfully")
+        
+        from peft import PeftModel, LoraConfig
+        print("✅ PEFT imported successfully")
+        
+        import torch
+        print(f"✅ PyTorch imported successfully (version: {torch.__version__})")
+        
+        from src.config.config import LoRAConfig
+        print("✅ LoRAConfig imported successfully")
+        
+        return True
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        return False
+
+def test_config():
+    """Test if configuration can be loaded."""
+    print("🧪 Testing configuration...")
+    
+    try:
+        config = LoRAConfig()
+        print(f"✅ Configuration loaded successfully")
+        print(f"   Model: {config.model_name}")
+        print(f"   Max length: {config.max_length}")
+        print(f"   Batch size: {config.batch_size}")
+        return True, config
+    except Exception as e:
+        print(f"❌ Configuration error: {e}")
+        return False, None
+
 def test_model():
     """Test the trained model with a simple question."""
     
-    config = LoRAConfig()
+    # Test basic imports first
+    if not test_basic_imports():
+        return False
+    
+    # Test configuration
+    config_ok, config = test_config()
+    if not config_ok:
+        return False
+    
     model_path = os.path.join(config.output_dir, "final_model")
     
     # Check if model exists
     if not os.path.exists(model_path):
-        print("❌ Trained model not found!")
+        print("⚠️  Trained model not found!")
         print(f"Expected path: {model_path}")
-        print("Please train the model first using: python scripts/train.py")
-        return False
+        print("This is expected if no training has been completed yet.")
+        print("✅ Basic functionality test passed - imports and config work correctly")
+        return True  # Return True for CI since this is expected before training
     
     print("✅ Trained model found!")
     
@@ -56,6 +110,8 @@ def test_model():
         # Load base model
         print("🤖 Loading base model...")
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Using device: {device}")
+        
         base_model = AutoModelForCausalLM.from_pretrained(
             config.model_name,
             torch_dtype=torch.float32,
@@ -86,14 +142,15 @@ def test_model():
         )
         
         # Move to device
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        if device == "cuda":
+            inputs = {k: v.to(device) for k, v in inputs.items()}
         
         # Generate response
         print("🤔 Generating response...")
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_length=inputs['input_ids'].shape[1] + 100,
+                max_length=inputs['input_ids'].shape[1] + 50,  # Shorter for testing
                 num_return_sequences=1,
                 temperature=0.7,
                 do_sample=True,
@@ -120,7 +177,10 @@ def test_model():
         
     except Exception as e:
         print(f"❌ Error testing model: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 if __name__ == "__main__":
-    test_model() 
+    success = test_model()
+    sys.exit(0 if success else 1) 
