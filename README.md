@@ -1,5 +1,9 @@
 # LoRA Demo - Low-Rank Adaptation for Language Models
 
+[![CI/CD Pipeline](https://github.com/jesudianch/LoRA/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/jesudianch/LoRA/actions/workflows/ci-cd-pipeline.yml)
+[![Docker Hub](https://img.shields.io/docker/pulls/jesudianch/lora-training-api)](https://hub.docker.com/r/jesudianch/lora-training-api)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 This project demonstrates the implementation of LoRA (Low-Rank Adaptation) for efficient fine-tuning of large language models using the Hugging Face Transformers library.
 
 ## 🚀 Overview
@@ -10,68 +14,73 @@ LoRA is a technique that enables efficient fine-tuning of large models by introd
 - **Efficient Fine-tuning**: Only 0.24% of parameters are trainable (786,432 out of 331,982,848)
 - **Weights & Biases Integration**: Automatic experiment tracking and model versioning
 - **Docker Support**: Containerized environment for reproducible training
+- **CI/CD Pipeline**: Automated testing, building, and deployment
 - **Flexible Configuration**: Easy-to-modify training parameters
 - **Sample Data Generation**: Automatic creation of training datasets
 
 ## 📁 Project Structure
 
 ```
-Lora-Demo/
+LoRA/
+├── .github/
+│   └── workflows/
+│       └── ci-cd-pipeline.yml    # CI/CD automation
 ├── src/
 │   ├── config/
-│   │   └── config.py          # LoRA configuration parameters
+│   │   └── config.py             # LoRA configuration parameters
 │   ├── data/
-│   │   └── data_processor.py  # Data loading and preprocessing
-│   ├── models/
-│   │   └── lora_trainer.py    # LoRA training implementation
-│   └── utils/                 # Utility functions
+│   │   └── data_processor.py     # Data loading and preprocessing
+│   ├── models/                   # Model implementations
+│   └── utils/                    # Utility functions
 ├── scripts/
-│   └── train.py              # Main training script
+│   ├── train.py                  # Main training script
+│   ├── test_model.py            # Model testing script
+│   └── inference.py             # Inference script
 ├── data/
-│   └── train.json            # Training dataset
-├── output/                   # Model checkpoints and logs
-├── wandb/                    # Weights & Biases logs
-├── Dockerfile               # Docker configuration
-├── docker-compose.yaml      # Docker Compose setup
-├── requirements.txt         # Python dependencies
-└── .env                     # Environment variables (API keys)
+│   └── train.json               # Training dataset
+├── output/                      # Model checkpoints and logs
+├── Dockerfile                   # Docker configuration
+├── docker-compose.yaml          # Docker Compose setup
+├── requirements.txt             # Python dependencies
+└── README.md                    # This file
 ```
 
 ## 🛠️ Setup
 
 ### Option 1: Local Environment
 
-1. **Create Conda Environment**:
+1. **Clone the Repository**:
    ```bash
-   conda create --prefix ./envs python=3.10 -y
-   conda activate ./envs
+   git clone https://github.com/jesudianch/LoRA.git
+   cd LoRA
    ```
 
-2. **Install Dependencies**:
+2. **Create Python Environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install Dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Set up Weights & Biases** (Optional):
-   ```bash
-   echo "WANDB_API_KEY=your_api_key_here" > .env
-   ```
-
 ### Option 2: Docker (Recommended)
 
-1. **Build and Run with Docker Compose**:
+1. **Using Docker Compose**:
    ```bash
-   # Build the image
-   docker compose build lora-demo
-   
-   # Run training
-   docker compose up lora-demo
+   # Build and run
+   docker-compose up --build
    ```
 
-2. **Run with Jupyter Notebook** (for development):
+2. **Using Pre-built Image**:
    ```bash
-   docker compose up jupyter
-   # Access at http://localhost:8888
+   # Pull from Docker Hub
+   docker pull jesudianch/lora-training-api:latest
+   
+   # Run training
+   docker run -v $(pwd)/output:/app/output jesudianch/lora-training-api:latest
    ```
 
 ## 🚀 Usage
@@ -80,63 +89,39 @@ Lora-Demo/
 
 #### Using Docker (Recommended):
 ```bash
-# Start training with wandb logging
-docker compose up lora-demo
+# Start training
+docker-compose up lora-training
 
 # Run in background
-docker compose up -d lora-demo
+docker-compose up -d lora-training
 
 # View logs
-docker compose logs -f lora-demo
-```
-
-#### Using GitHub Container Registry:
-```bash
-# Pull the latest image from GitHub Container Registry
-docker pull ghcr.io/jesudianchallapalli/lora-demo:latest
-
-# Run training with the pre-built image
-docker run -v $(pwd)/output:/app/output -v $(pwd)/data:/app/data ghcr.io/jesudianchallapalli/lora-demo:latest
-
-# Run inference with the pre-built image
-docker run -v $(pwd)/output:/app/output ghcr.io/jesudianchallapalli/lora-demo:latest python scripts/inference.py
+docker-compose logs -f lora-training
 ```
 
 #### Using Local Environment:
 ```bash
 # Activate environment
-conda activate ./envs
+source venv/bin/activate
 
 # Run training
 python scripts/train.py
+
+# Run with test mode
+python scripts/train.py --test-mode
 ```
 
-### Testing the Trained Model
+### Testing the Model
 
-After training, you can test how well your model answers questions:
-
-#### Quick Test (Docker):
 ```bash
-# Test if the model works
-docker compose run --rm test-model
-```
-
-#### Interactive Mode (Docker):
-```bash
-# Start interactive question-answering
-docker compose run --rm inference
-```
-
-#### Local Testing:
-```bash
-# Quick test
+# Test the trained model
 python scripts/test_model.py
 
-# Interactive mode
+# Run inference
 python scripts/inference.py
 ```
 
-#### Example Usage:
+### Interactive Usage:
 ```python
 from scripts.inference import LoRAInference
 from src.config.config import LoRAConfig
@@ -150,101 +135,65 @@ response = inference.generate_response("What is Machine Learning?")
 print(response)
 ```
 
-## 🔄 GitHub Actions
+## 🔄 CI/CD Pipeline
 
-This repository includes automated workflows for building, testing, and releasing the LoRA model:
+This repository includes a comprehensive CI/CD pipeline that automatically:
 
-### **Available Workflows:**
+### **Pipeline Stages:**
 
-1. **Docker Hub CI/CD** (`.github/workflows/docker-hub-ci.yml`) - **NEW!**
-   - Builds and tests on every push/PR
-   - Pushes Docker images to Docker Hub
-   - Includes security scanning with Trivy
-   - Multi-platform support (amd64, arm64)
+1. **🧪 Testing Stage**:
+   - Sets up Python 3.11 environment
+   - Installs dependencies
+   - Runs model tests (`test_model.py`)
+   - Validates training process with test mode
 
-2. **Docker Hub Release** (`.github/workflows/release-docker-hub.yml`) - **NEW!**
-   - Creates releases when tags are pushed
-   - Pushes versioned images to Docker Hub
-   - Creates GitHub releases with assets
+2. **🐳 Build & Push Stage**:
+   - Builds Docker image with commit hash tagging
+   - Pushes to Docker Hub with `latest` and commit-specific tags
+   - Uses GitHub Actions caching for faster builds
+   - Only runs on main branch pushes
 
-3. **Security Scan** (`.github/workflows/security-scan.yml`) - **NEW!**
-   - Scheduled weekly vulnerability scans
-   - Manual trigger support
-   - Uploads results to GitHub Security tab
+3. **🚀 Deploy Stage**:
+   - Deploys the application
+   - Shows deployment status and image information
 
-4. **GitHub Container Registry** (`.github/workflows/docker-build.yml`)
-   - Builds Docker image on every push/PR
-   - Pushes to GitHub Container Registry
-   - Supports multiple platforms (amd64, arm64)
+### **Automated Features:**
+- ✅ **Automated Testing**: Every push and PR is tested
+- ✅ **Docker Image Building**: Multi-stage builds with caching
+- ✅ **Version Tagging**: Commit-based and latest tagging
+- ✅ **Slack Notifications**: Optional build status notifications
+- ✅ **Branch Protection**: Only main branch deployments
 
-5. **Model Testing** (`.github/workflows/test-model.yml`)
-   - Tests the model training and inference
-   - Uploads test results as artifacts
-   - Can be triggered manually
-
-6. **Release** (`.github/workflows/release.yml`)
-   - Creates release when a new tag is published
-   - Builds and pushes release-specific Docker image
-   - Creates downloadable model assets
-
-### **Using Docker Hub Images:**
+### **Available Images:**
 
 ```bash
-# Pull the latest development build from Docker Hub
-docker pull your-dockerhub-username/lora-demo:main
+# Latest stable version
+docker pull jesudianch/lora-training-api:latest
 
-# Pull a specific release from Docker Hub
-docker pull your-dockerhub-username/lora-demo:v1.0.0
+# Specific commit version
+docker pull jesudianch/lora-training-api:abc1234
 
-# Pull the latest stable version
-docker pull your-dockerhub-username/lora-demo:latest
-
-# Run with Docker Hub image
-docker run -v $(pwd)/output:/app/output your-dockerhub-username/lora-demo:latest python scripts/inference.py
+# Run with specific version
+docker run -v $(pwd)/output:/app/output jesudianch/lora-training-api:latest
 ```
 
-### **Using GitHub Container Registry Images:**
+### **Setting up CI/CD:**
 
-```bash
-# Pull the latest development build
-docker pull ghcr.io/jesudianchallapalli/lora-demo:main
+#### Required Secrets:
+Add these secrets in your GitHub repository settings (Settings → Secrets and variables → Actions):
 
-# Pull a specific release
-docker pull ghcr.io/jesudianchallapalli/lora-demo:v1.0.0
-
-# Run with the automated build
-docker run -v $(pwd)/output:/app/output ghcr.io/jesudianchallapalli/lora-demo:main python scripts/inference.py
-```
-
-### **Setting up Secrets:**
-
-#### For Docker Hub CI/CD:
-1. Go to your repository Settings → Secrets and variables → Actions
-2. Add these secrets:
-   - `DOCKERHUB_USERNAME`: Your Docker Hub username
-   - `DOCKERHUB_TOKEN`: Your Docker Hub access token (not password)
-
-#### For Weights & Biases:
-1. Add a new secret named `WANDB_API_KEY`
-2. Set the value to your Weights & Biases API key
+1. **`DOCKER_USERNAME`**: Your Docker Hub username
+2. **`DOCKER_PASSWORD`**: Your Docker Hub access token
+3. **`SLACK_WEBHOOK_URL`**: (Optional) For build notifications
 
 #### Creating Docker Hub Access Token:
 1. Log in to [Docker Hub](https://hub.docker.com/)
 2. Go to Account Settings → Security
 3. Click "New Access Token"
-4. Give it a name (e.g., "GitHub Actions")
-5. Copy the token and add it as `DOCKERHUB_TOKEN` secret
+4. Name it "GitHub Actions" and copy the token
+5. Add it as `DOCKER_PASSWORD` secret in GitHub
 
-### **CI/CD Pipeline Features:**
-
-- **Automated Testing**: Runs tests before building images
-- **Multi-platform Builds**: Supports both AMD64 and ARM64 architectures
-- **Security Scanning**: Automated vulnerability scanning with Trivy
-- **Caching**: Uses GitHub Actions cache for faster builds
-- **Release Management**: Automatic release creation with assets
-- **Notifications**: Success/failure notifications in workflow logs
-
-### Configuration
+## ⚙️ Configuration
 
 Modify training parameters in `src/config/config.py`:
 
@@ -267,14 +216,14 @@ class LoRAConfig:
     weight_decay: float = 0.01
     warmup_steps: int = 100
     
-    # Weights & Biases
-    use_wandb: bool = True
+    # Weights & Biases (optional)
+    use_wandb: bool = False
     
     # Mixed precision
     fp16: bool = False
 ```
 
-### Data Format
+## 📊 Data Format
 
 Training data should be in JSON format with `input` and `output` fields:
 
@@ -282,42 +231,40 @@ Training data should be in JSON format with `input` and `output` fields:
 [
   {
     "input": "What is Machine Learning?",
-    "output": "Machine Learning is a subset of artificial intelligence..."
+    "output": "Machine Learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without being explicitly programmed for every task."
   },
   {
     "input": "Explain neural networks",
-    "output": "Neural networks are computational models..."
+    "output": "Neural networks are computational models inspired by biological neural networks that consist of interconnected nodes (neurons) organized in layers to process and learn from data."
   }
 ]
 ```
 
-## 📊 Monitoring
+## 📈 Performance Metrics
 
-### Weights & Biases Dashboard
+### Current Configuration:
+- **Model**: facebook/opt-350m
+- **Trainable Parameters**: 786,432 (0.24% of total)
+- **Total Parameters**: 331,982,848
+- **Memory Usage**: ~2GB (CPU training)
+- **Training Time**: ~10-15 minutes (3 epochs)
 
-When `use_wandb=True`, training metrics are automatically logged to:
-- **Project**:
-- **Real-time Metrics**: Loss, learning rate, training progress
-- **Model Artifacts**: Checkpoints and final model
-- **System Metrics**: GPU/CPU usage, memory consumption
+### Optimization Tips:
+- **Increase batch size** for better GPU utilization
+- **Enable fp16** for faster training on supported hardware
+- **Adjust LoRA rank** (`lora_r`) for performance vs. parameter trade-off
+- **Use gradient accumulation** for larger effective batch sizes
 
-### Local Logs
-
-Training logs are saved in:
-- `output/logs/` - Training logs
-- `output/final_model/` - Trained model
-- `wandb/` - Weights & Biases local files
-
-## 🔧 Advanced Configuration
+## 🔧 Advanced Usage
 
 ### GPU Support
 
-To enable GPU training in Docker:
+Enable GPU training in Docker:
 
 ```yaml
 # In docker-compose.yaml
 services:
-  lora-demo:
+  lora-training:
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -327,11 +274,10 @@ services:
 
 1. **Replace training data**:
    ```bash
-   # Copy your dataset to data/train.json
    cp your_dataset.json data/train.json
    ```
 
-2. **Add evaluation data**:
+2. **Add validation data**:
    ```python
    # In config.py
    eval_file: str = "data/eval.json"
@@ -345,46 +291,72 @@ Change the base model in `config.py`:
 # Smaller model for faster training
 model_name: str = "facebook/opt-125m"
 
-# Larger model for better performance
+# Larger model for better performance  
 model_name: str = "facebook/opt-1.3b"
 ```
-
-## 📈 Performance
-
-### Current Configuration:
-- **Model**: facebook/opt-350m
-- **Trainable Parameters**: 786,432 (0.24%)
-- **Total Parameters**: 331,982,848
-- **Memory Usage**: ~2GB (CPU training)
-- **Training Time**: ~10-15 minutes (3 epochs, 3 samples)
-
-### Optimization Tips:
-- **Increase batch size** for better GPU utilization
-- **Enable fp16** for faster training on supported hardware
-- **Adjust LoRA rank** (`lora_r`) for performance vs. parameter trade-off
-- **Use gradient accumulation** for larger effective batch sizes
 
 ## 🐛 Troubleshooting
 
 ### Common Issues:
 
-1. **Wandb Authentication Error**:
-   ```bash
-   # Ensure API key is set
-   echo "WANDB_API_KEY=your_key" > .env
-   ```
-
-2. **Memory Issues**:
+1. **Memory Issues**:
    ```python
-   # Reduce batch size
+   # Reduce batch size in config.py
    batch_size: int = 4
    
    # Enable gradient checkpointing
    gradient_checkpointing: bool = True
    ```
 
-3. **Docker Build Failures**:
+2. **Docker Build Failures**:
    ```bash
    # Clean build
-   docker compose build --no-cache lora-demo
+   docker-compose build --no-cache
    ```
+
+3. **CI/CD Pipeline Failures**:
+   - Check that all required secrets are set
+   - Verify Docker Hub credentials
+   - Review GitHub Actions logs for specific errors
+
+4. **Model Loading Issues**:
+   ```bash
+   # Ensure output directory exists
+   mkdir -p output
+   
+   # Check model file permissions
+   ls -la output/
+   ```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+The CI/CD pipeline will automatically test your changes!
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Hugging Face Transformers](https://huggingface.co/transformers/) for the excellent ML library
+- [LoRA Paper](https://arxiv.org/abs/2106.09685) for the original research
+- [Weights & Biases](https://wandb.ai/) for experiment tracking
+- [Docker](https://docker.com/) for containerization support
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](https://github.com/jesudianch/LoRA/issues) page
+2. Create a new issue with detailed information
+3. The CI/CD pipeline logs can help diagnose build problems
+
+---
+
+**Happy Training! 🚀**
