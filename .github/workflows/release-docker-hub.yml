@@ -1,0 +1,92 @@
+name: Docker Hub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: lora-training-api
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: |
+            docker-compose.yaml
+            requirements.txt
+            README.md
+          body: |
+            ## 🚀 LoRA Training API Release ${{ github.ref_name }}
+            
+            ### Docker Images
+            - `${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest`
+            
+            ### Usage
+            ```bash
+            # Pull the image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            
+            # Run training
+            docker run -v $(pwd)/output:/app/output ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ```
+            
+            ### What's Changed
+            See the full changelog below.
+
+      - name: Slack Notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo, message, author, job, ref
+          text: |
+            🎉 Release ${{ github.ref_name }} has been published!
+            Docker image: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 

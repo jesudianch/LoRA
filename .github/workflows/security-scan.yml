@@ -1,0 +1,86 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9 AM UTC
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: lora-training-api
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy vulnerability scanner (table format)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          output: 'trivy-results.txt'
+
+      - name: Upload scan results as artifact
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-scan-results
+          path: |
+            trivy-results.sarif
+            trivy-results.txt
+
+      - name: Check for critical vulnerabilities
+        run: |
+          # Count critical and high severity vulnerabilities
+          CRITICAL=$(grep -c '"level": "error"' trivy-results.sarif || echo "0")
+          HIGH=$(grep -c '"level": "warning"' trivy-results.sarif || echo "0")
+          
+          echo "Critical vulnerabilities: $CRITICAL"
+          echo "High vulnerabilities: $HIGH"
+          
+          # Create summary
+          echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Critical vulnerabilities**: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+          echo "- **High vulnerabilities**: $HIGH" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scan date**: $(date)" >> $GITHUB_STEP_SUMMARY
+          
+          # Fail if critical vulnerabilities found
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "❌ Critical vulnerabilities found!"
+            exit 1
+          else
+            echo "✅ No critical vulnerabilities found"
+          fi
+
+      - name: Slack Notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo, message, author, job
+          text: |
+            🔒 Security scan completed for ${{ env.IMAGE_NAME }}:latest
+            Status: ${{ job.status }}
+            Check the Security tab for detailed results.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 
